@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#e4d6b2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="Surf Hokusai’s Great Wave in 3D and ride through four of his Thirty-six Views of Mount Fuji. A living woodblock print you steer with one thumb. Free, no install.">
+<meta property="og:title" content="NAMIURA — surf Hokusai’s Great Wave">
+<meta property="og:description" content="A living woodblock print you steer with one thumb. Ride the tube into Red Fuji, the Thunderstorm and the Blue Print.">
+<title>NAMIURA — Great Wave Rider</title>
+<style>
+  :root { --cream:#e4d6b2; --ink:#14213a; --foam:#f4efe0; --red:#b5402c; --redtext:#8f2a1a;
+    --st: env(safe-area-inset-top,0px); --sb: env(safe-area-inset-bottom,0px); --sl: env(safe-area-inset-left,0px); --sr: env(safe-area-inset-right,0px);
+    --serif: "Cormorant Garamond","Hoefler Text","Baskerville","Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --mincho: "Yu Mincho","YuMincho","Hiragino Mincho ProN","Noto Serif JP","Songti SC",serif; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; overflow:hidden; background:var(--cream); overscroll-behavior:none;
+    touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; font-family:var(--serif); color:var(--ink); }
+  canvas#gl { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  #rain { position:fixed; inset:-20%; pointer-events:none; z-index:4; opacity:0; transition:opacity .6s;
+    background:repeating-linear-gradient(102deg, transparent 0 13px, rgba(20,33,58,.42) 13px 14px, transparent 14px 31px, rgba(20,33,58,.28) 31px 32px);
+    animation:rain .32s linear infinite; }
+  @keyframes rain { to { transform:translate(-14px,66px); } }
+  #grain { position:fixed; inset:0; pointer-events:none; mix-blend-mode:multiply; opacity:.55; z-index:5; }
+  #frame { position:fixed; inset:0; pointer-events:none; z-index:6; border:7px solid var(--cream);
+    box-shadow: inset 0 0 0 1.5px rgba(20,33,58,.75), inset 0 0 60px rgba(90,70,30,.22); }
+  .ui { position:fixed; z-index:10; pointer-events:none; }
+  .cart { background:var(--cream); border:1.5px solid var(--ink); box-shadow: inset 0 0 0 2.5px var(--cream), inset 0 0 0 3.5px var(--ink); }
+  .vert { writing-mode:vertical-rl; text-orientation:upright; letter-spacing:.14em; font-family:var(--mincho); }
+  .glow { color:var(--foam); text-shadow:0 0 3px var(--ink),0 0 3px var(--ink),0 2px 12px rgba(20,33,58,.9),0 0 22px rgba(20,33,58,.7); }
+
+  #hud { top:calc(16px + var(--st)); left:calc(16px + var(--sl)); transition:opacity .4s; }
+  #hud .nums { padding:7px 12px 6px; min-width:104px; line-height:1; }
+  #score { font-size:30px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums lining-nums; }
+  #sub { font-size:11.5px; margin-top:4px; letter-spacing:.1em; font-weight:700; }
+  #combo { margin-top:5px; font-size:13px; font-weight:700; letter-spacing:.12em; color:var(--redtext); opacity:0; transition:opacity .3s; }
+  #prog { top:calc(9px + var(--st)); left:9px; right:9px; height:6px; background:rgba(20,33,58,.25); opacity:0; transition:opacity .4s; z-index:7; }
+  #prog::after { content:""; position:absolute; right:0; top:-3px; width:2px; height:12px; background:var(--ink); }
+  #progf { height:100%; background:var(--red); transform-origin:left center; transform:scaleX(0); }
+  #mute { top:calc(16px + var(--st)); right:calc(14px + var(--sr)); pointer-events:auto; width:40px; height:40px; font-size:17px;
+    display:grid; place-items:center; border-radius:50%; cursor:pointer; font-family:var(--serif); color:var(--ink); padding:0; }
+  #pop { left:0; right:0; top:30%; text-align:center; font-size:25px; font-weight:700; letter-spacing:.14em; opacity:0; }
+  #pop small { display:block; font-size:12px; letter-spacing:.28em; margin-top:3px; font-weight:600; text-transform:uppercase; }
+  #pop.go { animation:pop 1.25s ease-out forwards; }
+  @keyframes pop { 0%{opacity:0; transform:translateY(14px) scale(.9)} 14%{opacity:1; transform:none} 70%{opacity:1} 100%{opacity:0; transform:translateY(-22px)} }
+  #banner { left:50%; top:calc(104px + var(--st)); transform:translateX(-50%); width:min(82vw,370px); padding:9px 14px 8px; text-align:center; opacity:0; }
+  #banner i { display:block; font-style:normal; font-size:11px; letter-spacing:.3em; color:var(--redtext); font-weight:700; }
+  #banner b { display:block; font-size:21px; line-height:1.12; margin:5px 0 4px; font-weight:700; letter-spacing:.02em; }
+  #banner small { display:block; font-size:12px; letter-spacing:.1em; font-style:italic; opacity:.85; }
+  #banner.go { animation:ban 3s ease-out forwards; }
+  @keyframes ban { 0%{opacity:0; transform:translate(-50%,-10px) scale(.96)} 10%{opacity:1; transform:translate(-50%,0)} 78%{opacity:1; transform:translate(-50%,0)} 100%{opacity:0; transform:translate(-50%,-14px)} }
+  #hint { left:0; right:0; bottom:calc(25% + var(--sb)); text-align:center; font-size:16px; letter-spacing:.12em; opacity:0; transition:opacity .8s; font-weight:700; text-transform:uppercase; }
+  #hint span { display:block; font-size:12px; letter-spacing:.2em; opacity:.92; margin-top:2px; }
+  #hint b { font-size:24px; display:block; letter-spacing:.5em; margin-bottom:2px; }
+
+  .screen { position:fixed; inset:0; z-index:12; pointer-events:none; opacity:0; visibility:hidden; transition:opacity .5s, visibility 0s .5s; }
+  .screen.on { opacity:1; visibility:visible; transition:opacity .5s; }
+  .screen:not(.on) .tap { animation:none; }
+  #title .mark { position:absolute; top:calc(26px + var(--st)); left:calc(24px + var(--sl)); padding:12px 7px; font-size:15px; font-weight:600; line-height:1.2; }
+  .panel { position:absolute; left:50%; bottom:calc(7% + var(--sb)); transform:translateX(-50%); text-align:center; width:min(90vw,440px); }
+  .panel h1 { margin:0; font-size:clamp(46px,14.5vw,72px); line-height:.95; letter-spacing:.14em; font-weight:700; padding-left:.14em; }
+  .panel h2 { margin:8px 0 0; font-size:13px; letter-spacing:.44em; font-weight:600; padding-left:.44em; }
+  .panel .by { margin-top:5px; font-size:13px; font-style:italic; letter-spacing:.05em; }
+  .panel .by b { font-style:normal; letter-spacing:.18em; }
+  .tap { display:inline-block; margin-top:18px; padding:12px 26px 11px; font-size:17px; letter-spacing:.3em; font-weight:700; color:var(--ink); text-shadow:none; animation:breathe 2s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform:scale(1.045); } }
+  .how { margin-top:12px; font-size:13.5px; letter-spacing:.03em; line-height:1.5; font-weight:600; }
+  .seals { margin-top:11px; display:flex; gap:9px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+  .seals .cap { flex-basis:100%; font-size:11px; letter-spacing:.16em; font-weight:700; margin-top:1px; }
+  .sw { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .dots { display:flex; gap:3px; } .dots i { width:5px; height:5px; border-radius:50%; border:1px solid currentColor; opacity:.7; } .dots i.on { background:currentColor; opacity:1; }
+  .seal.got { pointer-events:auto; cursor:pointer; }
+  .chip { display:inline-block; margin-top:10px; padding:7px 16px 6px; font-size:12.5px; letter-spacing:.2em; font-weight:700; color:var(--ink); text-shadow:none; pointer-events:auto; cursor:pointer; font-family:var(--serif); }
+  .chip small { display:block; font-size:10.5px; letter-spacing:.06em; font-weight:600; font-style:italic; margin-top:1px; }
+  #tPick { font-size:11.5px; font-style:italic; margin-top:3px; min-height:1em; }
+  .seal { width:27px; height:27px; display:grid; place-items:center; font-size:11px; font-weight:700; letter-spacing:0; text-shadow:none;
+    border:1.5px solid rgba(244,239,224,.75); color:rgba(244,239,224,.75); border-radius:3px; }
+  .seal.got { background:var(--red); border-color:var(--red); color:var(--foam); box-shadow:0 0 0 1.5px var(--foam) inset; }
+  .seal.new { animation:stamp .5s .9s cubic-bezier(.2,2.2,.4,1) backwards; }
+  @keyframes stamp { from { transform:scale(2.6) rotate(-14deg); opacity:0; } }
+  #tBest { margin-top:8px; font-size:12px; letter-spacing:.3em; font-weight:600; min-height:1em; }
+  #over .panel { color:var(--ink); bottom:auto; top:50%; transform:translate(-50%,-50%); padding:18px 16px 16px; }
+  #over .lbl { font-size:13px; letter-spacing:.26em; padding-left:.26em; font-weight:700; color:var(--redtext); }
+  #oTip { margin:5px auto 6px; font-size:13.5px; line-height:1.35; font-weight:600; max-width:330px; }
+  #oGoal { margin-top:8px; font-size:12.5px; font-weight:700; letter-spacing:.03em; }
+  #over .tap { margin-top:12px; }
+  #over .num { font-size:54px; font-weight:700; line-height:1.05; font-variant-numeric:tabular-nums lining-nums; }
+  #over .best { font-size:13px; letter-spacing:.24em; margin-top:1px; font-weight:600; }
+  #over .rec { color:var(--redtext); font-weight:700; }
+  #oReach { margin-top:13px; font-size:14px; font-weight:700; letter-spacing:.04em; }
+  #oTease { font-size:14px; color:var(--redtext); margin-top:2px; font-weight:700; }
+  #over .stats { font-size:12.5px; letter-spacing:.04em; margin-top:7px; }
+  #over .seal { border-color:rgba(20,33,58,.4); color:rgba(20,33,58,.45); }
+  #over .seal.got { border-color:var(--red); color:var(--foam); }
+  @media (orientation:landscape) and (max-height:520px) {
+    .panel { bottom:3%; } .panel h1 { font-size:36px; } .tap { margin-top:6px; padding:7px 22px; } .how { margin-top:5px; font-size:12px; } .how .l2 { display:none; } .seals { margin-top:5px; } .chip { margin-top:5px; padding:4px 14px; } #tBest { margin-top:3px; }
+    #oTip, #oGoal, #over .stats { display:none; } #over .tap { margin-top:6px; } #banner { top:calc(12px + var(--st)); width:min(46vw,360px); }
+    #over .num { font-size:34px; } #over .panel { padding:9px 16px; } #oReach { margin-top:3px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="rain"></div>
+<div id="grain"></div>
+<div id="frame"></div>
+
+<div id="prog" class="ui"><div id="progf"></div></div>
+<div id="hud" class="ui" style="opacity:0">
+  <div class="cart nums"><div id="score">0</div><div id="sub">BEST 0</div><div id="combo">PLOVERS ×2</div></div>
+</div>
+<button id="mute" class="ui cart" aria-label="Sound on or off">♪</button>
+<div id="pop" class="ui glow"></div>
+<div id="banner" class="ui cart"></div>
+<div id="hint" class="ui glow"><b>←</b>Drag left to climb the wave<span>let go to slide back down</span></div>
+
+<div id="title" class="screen on">
+  <div class="mark cart vert" aria-hidden="true" lang="ja">冨嶽三十六景　神奈川沖<span style="color:var(--red)">浪裏</span></div>
+  <div class="panel glow">
+    <h1>NAMIURA</h1>
+    <h2>GREAT WAVE RIDER</h2>
+    <div class="by"><b>nami-ura</b> <span lang="ja">浪裏</span> — “beneath the wave”</div>
+    <div class="by">a ride through Hokusai’s <i>Thirty-six Views of Mount Fuji</i></div>
+    <div class="tap cart">TAP TO RIDE</div>
+    <div class="how">Drag left to climb the wave. Let go to drop.<br><span class="l2">Catch the white birds. Dodge boats and foam claws.<br></span>Every 800 m the wave opens onto a new Hokusai print.</div>
+    <div class="seals" id="tSeals"></div>
+    <div id="tPick"></div>
+    <div class="chip cart" id="tDaily"></div>
+    <div id="tBest"></div>
+  </div>
+</div>
+
+<div id="over" class="screen">
+  <div class="panel cart">
+    <div class="lbl" id="oWhy">WIPEOUT</div>
+    <div id="oTip"></div>
+    <div class="num" id="oScore">0</div>
+    <div class="best" id="oBest">BEST 0</div>
+    <div id="oReach"></div>
+    <div id="oTease"></div>
+    <div class="stats" id="oStats"></div>
+    <div class="seals" id="oSeals"></div>
+    <div id="oGoal"></div>
+    <div class="tap cart">RIDE AGAIN</div><br>
+    <button class="chip cart" id="oShare" style="margin-top:8px">SHARE</button>
+  </div>
+</div>
+
+<script>
+  window.onerror = function (m, s, l) { var d = document.getElementById('err'); if (!d) { d = document.createElement('div'); d.id = 'err'; d.style.cssText = 'position:fixed;left:10px;right:10px;bottom:10px;z-index:99;font:12px sans-serif;color:#b5402c;background:#f4efe0;padding:6px;border:1px solid #14213a'; document.body.appendChild(d); } d.textContent = window.THREE ? 'Something went wrong. Please reload. (' + m + ' @' + l + ')' : 'Could not load the game. Check your connection and reload.'; };
+</script>
+<script src="js/three.min.js"></script>
+<script>window.THREE || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')</script>
+<script src="js/world.js"></script>
+<script src="js/actors.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
